@@ -1,0 +1,16 @@
+{
+    "name": "wakelight",
+    "stubs": {
+        "esp8266-micropython-1.11.0": "1.2.0"
+    },
+    "dev-packages": {
+        "micropy-cli": "*"
+    },
+    "packages": {
+        "blynklib": "*"
+    },
+    "config": {
+        "vscode": true,
+        "pylint": true
+    }
+}
