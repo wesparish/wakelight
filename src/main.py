@@ -65,7 +65,7 @@ def check_times(junk):
     led_on = False
     for item in configuration['wakelight']:
         start_time = utime.mktime((curr_time[0], curr_time[1], curr_time[2],
-                                   int(item['start_time']['hour'])+6,
+                                   int(item['start_time']['hour'])+configuration['tz_offset'],
                                    int(item['start_time']['minute']),
                                    0,
                                    0, 55))

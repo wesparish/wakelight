@@ -1,18 +1,18 @@
 {
-  "tz_offset": -6,
+  "tz_offset": 6,
   "wakelight": [
     {
       "start_time": {
-        "hour": "7",
-        "minute": "0"
+        "hour": "6",
+        "minute": "45"
       },
       "end_time": {
         "hour": "7",
-        "minute": "59"
+        "minute": "30"
       },
       "color": {
         "red": 0,
-        "green": 10,
+        "green": 1,
         "blue": 0
       }
     }
