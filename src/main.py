@@ -5,16 +5,15 @@ from neopixel import NeoPixel
 import network
 import ntptime
 import ujson
+import utime
 
 connect_status_pin = Pin(16, Pin.OUT)
 
 def read_config():
-    # Load config file
     with open("config/config.json", "r") as config_file:
         return ujson.load(config_file)
 
 def read_wifi_config():
-    # Load config file
     with open("config/wifi_credentials.json", "r") as config_file:
         return ujson.load(config_file)
 
@@ -43,41 +42,50 @@ np = NeoPixel(np_pin, num_pixels_global)
 
 def set_led(r, g, b, num_pixels=num_pixels_global):
     for i in range(num_pixels):
-        print("Setting np[%s]: to %s" % (i, (r, g, b)))
         np[i] = (r, g, b)
     np.write()
 
 def check_times(junk):
     print("In check_times()")
+    do_connect()
     ntptime.settime() # set the rtc datetime from the remote server
-    curr_time = rtc.datetime()
+
+    configuration = read_config()
+    print("configuration: %s" % configuration)
+
+    curr_time = utime.localtime()
     print(curr_time)    # get the date and time in UTC
     print("Time: %s/%s/%s %s:%s:%s" % (curr_time[1],
                                        curr_time[2],
                                        curr_time[0],
-                                       curr_time[4]-6, # no TZ support
-                                       curr_time[5],
-                                       curr_time[6]))
-    configuration = read_config()
-    print("configuration: %s" % configuration)
+                                       curr_time[3]-configuration['tz_offset'], # no TZ support
+                                       curr_time[4],
+                                       curr_time[5]))
 
+    led_on = False
     for item in configuration['wakelight']:
-        print("Checking %s >= %s" % (curr_time[4] - 6, int(item['start_time']['hour'])))
-        print("Checking %s <= %s" % (curr_time[4] - 6, int(item['end_time']['hour'])))
-        print("Checking %s >= %s" % (curr_time[5], int(item['start_time']['minute'])))
-        print("Checking %s <= %s" % (curr_time[4] - 6, int(item['end_time']['minute'])))
-        if (curr_time[4] - 6) >= int(item['start_time']['hour']) and \
-           (curr_time[4] - 6) <= int(item['end_time']['hour']) and \
-            curr_time[5] >= int(item['start_time']['minute']) and \
-            curr_time[5] <= int(item['end_time']['minute']):
-            print("Turning on LED!")
+        start_time = utime.mktime((curr_time[0], curr_time[1], curr_time[2],
+                                   int(item['start_time']['hour'])+6,
+                                   int(item['start_time']['minute']),
+                                   0,
+                                   0, 55))
+        end_time = utime.mktime((curr_time[0], curr_time[1], curr_time[2],
+                                 int(item['end_time']['hour'])+configuration['tz_offset'],
+                                 int(item['end_time']['minute']),
+                                 0,
+                                 0, 55))
+        print("start_time: %s, end_time: %s, time(): %s" % (start_time, end_time, utime.time()))
+        if utime.time() >= start_time and utime.time() <= end_time:
+            print("Turning on LED! with color (%s, %s, %s)" % (item['color']['red'],
+                                                               item['color']['green'],
+                                                               item['color']['blue']))
             set_led(item['color']['red'],
                     item['color']['green'],
                     item['color']['blue'])
-        else:
-            print("Turning off LED!")
-            # Turn off LED
-            set_led(0, 0, 0)
+            led_on = True
+    if not led_on:
+        print("Turning off LED!")
+        set_led(0, 0, 0)
 
 timer2 = Timer(-1)
 timer2.init(period=10000, mode=Timer.PERIODIC, callback=check_times)
